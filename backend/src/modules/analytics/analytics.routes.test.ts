@@ -86,4 +86,82 @@ describe("Analytics API", () => {
       });
     });
   });
+
+  describe("GET /analytics/payroll-by-country", () => {
+    it("returns grouped totals sorted descending", async () => {
+      await createEmployeeWithSalary({
+        amount: 50_000,
+        employeeCode: "ACME-CIN-01",
+        email: "country.one@acme.example",
+      });
+
+      const usEmployee = await request(app)
+        .post("/employees")
+        .send({
+          employeeCode: "ACME-CUS-01",
+          firstName: "United",
+          lastName: "States",
+          email: "country.us@acme.example",
+          departmentId: TEST_DEPARTMENTS[0].id,
+          countryId: TEST_COUNTRIES[1].id,
+        });
+
+      await salaryService.createSalary({
+        employeeId: usEmployee.body.id,
+        amount: 120_000,
+        currency: "USD",
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      });
+
+      const response = await request(app).get("/analytics/payroll-by-country");
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0]).toMatchObject({
+        countryId: TEST_COUNTRIES[1].id,
+        countryName: TEST_COUNTRIES[1].name,
+        total: 120_000,
+      });
+      expect(response.body.data[1].total).toBe(50_000);
+    });
+  });
+
+  describe("GET /analytics/payroll-by-department", () => {
+    it("returns grouped totals sorted descending with labels", async () => {
+      await createEmployeeWithSalary({
+        amount: 70_000,
+        employeeCode: "ACME-DEP-01",
+        email: "dept.one@acme.example",
+      });
+
+      const productEmployee = await request(app)
+        .post("/employees")
+        .send({
+          employeeCode: "ACME-DEP-02",
+          firstName: "Product",
+          lastName: "Member",
+          email: "dept.product@acme.example",
+          departmentId: TEST_DEPARTMENTS[1].id,
+          countryId: TEST_COUNTRIES[0].id,
+        });
+
+      await salaryService.createSalary({
+        employeeId: productEmployee.body.id,
+        amount: 90_000,
+        currency: "INR",
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      });
+
+      const response = await request(app).get(
+        "/analytics/payroll-by-department",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.data[0]).toMatchObject({
+        departmentId: TEST_DEPARTMENTS[1].id,
+        departmentName: TEST_DEPARTMENTS[1].name,
+        total: 90_000,
+      });
+    });
+  });
 });
