@@ -1,12 +1,15 @@
 import {
   Alert,
   Box,
+  Button,
+  Flex,
   Heading,
   SimpleGrid,
   Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -16,6 +19,7 @@ import {
 import { useEmployeeQuery } from "../hooks/useEmployeesQuery";
 import { useSalariesQuery } from "../../salaries/hooks/useSalariesQuery";
 import { SalaryHistory } from "../../salaries/components/SalaryHistory";
+import { AddSalaryModal } from "../../salaries/components/AddSalaryModal";
 
 function formatSalaryAmount(amount: number, currency: string): string {
   return `${amount.toLocaleString("en-US")} ${currency}`;
@@ -23,6 +27,7 @@ function formatSalaryAmount(amount: number, currency: string): string {
 
 export function EmployeeDetailPage() {
   const { id } = useParams();
+  const [isAddSalaryOpen, setIsAddSalaryOpen] = useState(false);
   const employeeQuery = useEmployeeQuery(id ?? null);
   const salariesQuery = useSalariesQuery(id ?? null);
 
@@ -59,7 +64,10 @@ export function EmployeeDetailPage() {
 
   return (
     <Stack gap={6}>
-      <Heading size="lg">Employee Details</Heading>
+      <Flex justify="space-between" align={{ base: "stretch", md: "center" }} direction={{ base: "column", md: "row" }} gap={4}>
+        <Heading size="lg">Employee Details</Heading>
+        <Button onClick={() => setIsAddSalaryOpen(true)}>Add salary</Button>
+      </Flex>
 
       <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
         <Box>
@@ -96,6 +104,14 @@ export function EmployeeDetailPage() {
       </SimpleGrid>
 
       <SalaryHistory salaries={salariesQuery.data?.data ?? []} />
+
+      {employee ? (
+        <AddSalaryModal
+          employeeId={employee.id}
+          open={isAddSalaryOpen}
+          onOpenChange={setIsAddSalaryOpen}
+        />
+      ) : null}
     </Stack>
   );
 }

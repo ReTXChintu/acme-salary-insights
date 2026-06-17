@@ -56,7 +56,7 @@ describe("Employee detail salary management", () => {
     await user.click(await screen.findByRole("button", { name: "Add salary" }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Add salary")).toBeInTheDocument();
+    expect(screen.getByLabelText("Amount")).toBeInTheDocument();
   });
 
   it("creates salary record", async () => {
