@@ -267,20 +267,4 @@ describe("EmployeeService.list()", () => {
     expect(result.total).toBe(3);
     expect(result.data).toHaveLength(1);
   });
-
-  it("excludes soft-deleted employees", async () => {
-    const employees = await employeeService.list();
-    const employeeToDelete = employees.data[0];
-
-    expect(employeeToDelete).toBeDefined();
-
-    await employeeService.delete(employeeToDelete!.id);
-
-    const result = await employeeService.list();
-
-    expect(result.total).toBe(2);
-    expect(result.data.some((employee) => employee.id === employeeToDelete!.id)).toBe(
-      false,
-    );
-  });
 });

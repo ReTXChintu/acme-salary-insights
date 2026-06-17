@@ -88,4 +88,36 @@ export class EmployeeService {
       matchesSearchQuery(employee, trimmedQuery),
     );
   }
+
+  async list(
+    params: {
+      departmentId?: string;
+      countryId?: string;
+      page?: number;
+      pageSize?: number;
+    } = {},
+  ): Promise<{ data: Employee[]; total: number }> {
+    const where = {
+      isActive: true,
+      deletedAt: null,
+      ...(params.departmentId ? { departmentId: params.departmentId } : {}),
+      ...(params.countryId ? { countryId: params.countryId } : {}),
+    };
+
+    const page = params.page ?? 1;
+    const pageSize = params.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
+    const [data, total] = await Promise.all([
+      this.db.employee.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: "asc" },
+      }),
+      this.db.employee.count({ where }),
+    ]);
+
+    return { data, total };
+  }
 }
