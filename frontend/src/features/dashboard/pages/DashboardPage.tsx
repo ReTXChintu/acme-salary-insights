@@ -4,11 +4,15 @@ import {
   SimpleGrid,
   Skeleton,
   Stack,
+  Table,
   Text,
 } from "@chakra-ui/react";
 
 import { formatCount, formatCurrency } from "../../../lib/utils/format";
-import { useAnalyticsSummaryQuery } from "../../analytics/hooks/useAnalyticsQueries";
+import {
+  useAnalyticsSummaryQuery,
+  useTopPaidEmployeesQuery,
+} from "../../analytics/hooks/useAnalyticsQueries";
 
 function KpiCard({
   label,
@@ -45,12 +49,16 @@ function KpiCard({
 
 export function DashboardPage() {
   const summaryQuery = useAnalyticsSummaryQuery();
+  const topPaidQuery = useTopPaidEmployeesQuery(5);
 
-  if (summaryQuery.isLoading) {
+  const isLoading = summaryQuery.isLoading || topPaidQuery.isLoading;
+
+  if (isLoading) {
     return <Text>Loading dashboard metrics...</Text>;
   }
 
   const summary = summaryQuery.data;
+  const topPaidData = topPaidQuery.data?.data ?? [];
 
   return (
     <Stack gap="6">
@@ -93,6 +101,46 @@ export function DashboardPage() {
           isLoading={summaryQuery.isLoading}
         />
       </SimpleGrid>
+
+      <Box
+        aria-label="Top paid employees"
+        borderWidth="1px"
+        borderRadius="lg"
+        bg="white"
+        _dark={{ bg: "gray.900", borderColor: "gray.700" }}
+        borderColor="gray.200"
+        p="5"
+        overflowX="auto"
+      >
+        <Heading as="h2" size="md" mb="4">
+          Top 5 highest paid employees
+        </Heading>
+        {topPaidData.length === 0 ? (
+          <Text color="gray.500">No top paid employees yet.</Text>
+        ) : (
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Employee</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="end">Salary</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {topPaidData.map((entry) => (
+                <Table.Row key={entry.employeeId}>
+                  <Table.Cell>
+                    {entry.employeeCode ?? entry.employeeId} — {entry.firstName}{" "}
+                    {entry.lastName}
+                  </Table.Cell>
+                  <Table.Cell textAlign="end">
+                    {formatCurrency(entry.amount)}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        )}
+      </Box>
     </Stack>
   );
 }
