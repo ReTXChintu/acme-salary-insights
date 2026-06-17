@@ -18,19 +18,6 @@ export function AppShell() {
   );
 }
 
-export function DashboardPage() {
-  return (
-    <Box>
-      <Heading as="h1" size="2xl">
-        Dashboard
-      </Heading>
-      <Text mt="4" color="gray.600">
-        Welcome to ACME Salary Insights.
-      </Text>
-    </Box>
-  );
-}
-
 export function AnalyticsPage() {
   return (
     <Box>

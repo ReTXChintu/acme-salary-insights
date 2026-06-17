@@ -3,8 +3,8 @@ import { createBrowserRouter } from "react-router-dom";
 import {
   AnalyticsPage,
   AppShell,
-  DashboardPage,
 } from "../components/layout/AppShell";
+import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/pages/EmployeesPage";
 import { EmployeeDetailPage } from "../features/employees/pages/EmployeeDetailPage";
 
