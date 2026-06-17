@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: acme-salary-insights-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build && npx prisma migrate deploy
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+    # SQLite on Render requires a persistent disk for production data.
+    # For assessment/demo purposes, migrate deploy initializes schema on each deploy.
