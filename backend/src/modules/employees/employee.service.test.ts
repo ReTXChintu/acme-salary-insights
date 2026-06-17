@@ -268,3 +268,55 @@ describe("EmployeeService.list()", () => {
     expect(result.data).toHaveLength(1);
   });
 });
+
+describe("EmployeeService.update()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("updates employee", async () => {
+    const createdEmployee = await createTestEmployee();
+
+    const updatedEmployee = await employeeService.update(createdEmployee.id, {
+      firstName: "Janet",
+      lastName: "Updated",
+    });
+
+    expect(updatedEmployee).toMatchObject({
+      id: createdEmployee.id,
+      firstName: "Janet",
+      lastName: "Updated",
+      email: createdEmployee.email,
+    });
+  });
+
+  it("rejects duplicate email", async () => {
+    const { DuplicateEmailError } = await import("./employee.errors.js");
+    const firstEmployee = await createTestEmployee({
+      employeeCode: "ACME-UPDATE-01",
+      email: "first.update@acme.example",
+    });
+
+    const secondEmployee = await createTestEmployee({
+      employeeCode: "ACME-UPDATE-02",
+      email: "second.update@acme.example",
+    });
+
+    await expect(
+      employeeService.update(secondEmployee.id, {
+        email: firstEmployee.email,
+      }),
+    ).rejects.toThrow(DuplicateEmailError);
+  });
+
+  it("throws employee not found", async () => {
+    const { EmployeeNotFoundError } = await import("./employee.errors.js");
+
+    await expect(
+      employeeService.update("missing-employee-id", {
+        firstName: "Missing",
+      }),
+    ).rejects.toThrow(EmployeeNotFoundError);
+  });
+});
