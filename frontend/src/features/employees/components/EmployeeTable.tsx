@@ -17,6 +17,7 @@ type EmployeeTableProps = {
   employees: Employee[];
   searchValue: string;
   onSearchChange: (value: string) => void;
+  onView?: (employee: Employee) => void;
   onEdit?: (employee: Employee) => void;
   onDelete?: (employee: Employee) => void;
   isLoading?: boolean;
@@ -26,6 +27,7 @@ export function EmployeeTable({
   employees,
   searchValue,
   onSearchChange,
+  onView,
   onEdit,
   onDelete,
   isLoading = false,
@@ -69,6 +71,15 @@ export function EmployeeTable({
                 <Table.Cell>{getCountryName(employee.countryId)}</Table.Cell>
                 <Table.Cell>
                   <HStack gap="2">
+                    {onView ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onView(employee)}
+                      >
+                        View
+                      </Button>
+                    ) : null}
                     {onEdit ? (
                       <Button
                         size="sm"
