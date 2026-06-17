@@ -1,36 +1,20 @@
-import type { Employee, PrismaClient } from "../../generated/prisma/client.js";
+import type { Employee } from "../../generated/prisma/client.js";
 import { prisma } from "../../shared/prisma.js";
 
 import { EmployeeNotFoundError } from "./employee.errors.js";
+import {
+  EmployeeRepository,
+  type CreateEmployeeData,
+  type ListEmployeesParams,
+  type UpdateEmployeeData,
+} from "./employee.repository.js";
 import {
   validateCountry,
   validateDepartment,
   validateUniqueEmail,
 } from "./employee.validation.js";
 
-export type CreateEmployeeData = {
-  employeeCode: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  departmentId: string;
-  countryId: string;
-};
-
-export type UpdateEmployeeData = Partial<CreateEmployeeData>;
-
-function matchesSearchQuery(employee: Employee, query: string): boolean {
-  const normalizedQuery = query.toLowerCase();
-  const searchableValues = [
-    employee.firstName,
-    employee.lastName,
-    employee.employeeCode,
-  ];
-
-  return searchableValues.some((value) =>
-    value.toLowerCase().includes(normalizedQuery),
-  );
-}
+export type { CreateEmployeeData, ListEmployeesParams, UpdateEmployeeData };
 
 function trimEmployeeData(data: CreateEmployeeData): CreateEmployeeData {
   return {
@@ -43,26 +27,24 @@ function trimEmployeeData(data: CreateEmployeeData): CreateEmployeeData {
 }
 
 export class EmployeeService {
-  constructor(private readonly db: PrismaClient = prisma) {}
+  private readonly repository: EmployeeRepository;
+
+  constructor(repository = new EmployeeRepository(prisma)) {
+    this.repository = repository;
+  }
 
   async create(input: CreateEmployeeData): Promise<Employee> {
     const data = trimEmployeeData(input);
 
-    await validateDepartment(this.db, data.departmentId);
-    await validateCountry(this.db, data.countryId);
-    await validateUniqueEmail(this.db, data.email);
+    await validateDepartment(prisma, data.departmentId);
+    await validateCountry(prisma, data.countryId);
+    await validateUniqueEmail(prisma, data.email);
 
-    return this.db.employee.create({ data });
+    return this.repository.create(data);
   }
 
   async getById(id: string): Promise<Employee> {
-    const employee = await this.db.employee.findFirst({
-      where: {
-        id,
-        isActive: true,
-        deletedAt: null,
-      },
-    });
+    const employee = await this.repository.findActiveById(id);
 
     if (!employee) {
       throw new EmployeeNotFoundError(id);
@@ -72,55 +54,13 @@ export class EmployeeService {
   }
 
   async search(query: string): Promise<Employee[]> {
-    const trimmedQuery = query.trim();
-
-    if (!trimmedQuery) {
-      return [];
-    }
-
-    const activeEmployees = await this.db.employee.findMany({
-      where: {
-        isActive: true,
-        deletedAt: null,
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    return activeEmployees.filter((employee) =>
-      matchesSearchQuery(employee, trimmedQuery),
-    );
+    return this.repository.search(query);
   }
 
   async list(
-    params: {
-      departmentId?: string;
-      countryId?: string;
-      page?: number;
-      pageSize?: number;
-    } = {},
+    params: ListEmployeesParams = {},
   ): Promise<{ data: Employee[]; total: number }> {
-    const where = {
-      isActive: true,
-      deletedAt: null,
-      ...(params.departmentId ? { departmentId: params.departmentId } : {}),
-      ...(params.countryId ? { countryId: params.countryId } : {}),
-    };
-
-    const page = params.page ?? 1;
-    const pageSize = params.pageSize ?? 20;
-    const skip = (page - 1) * pageSize;
-
-    const [data, total] = await Promise.all([
-      this.db.employee.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: "asc" },
-      }),
-      this.db.employee.count({ where }),
-    ]);
-
-    return { data, total };
+    return this.repository.list(params);
   }
 
   async update(id: string, input: UpdateEmployeeData): Promise<Employee> {
@@ -129,33 +69,24 @@ export class EmployeeService {
     const data = trimPartialEmployeeData(input);
 
     if (data.departmentId) {
-      await validateDepartment(this.db, data.departmentId);
+      await validateDepartment(prisma, data.departmentId);
     }
 
     if (data.countryId) {
-      await validateCountry(this.db, data.countryId);
+      await validateCountry(prisma, data.countryId);
     }
 
     if (data.email) {
-      await validateUniqueEmail(this.db, data.email, id);
+      await validateUniqueEmail(prisma, data.email, id);
     }
 
-    return this.db.employee.update({
-      where: { id },
-      data,
-    });
+    return this.repository.update(id, data);
   }
 
   async delete(id: string): Promise<Employee> {
     await this.getById(id);
 
-    return this.db.employee.update({
-      where: { id },
-      data: {
-        isActive: false,
-        deletedAt: new Date(),
-      },
-    });
+    return this.repository.softDelete(id);
   }
 }
 
