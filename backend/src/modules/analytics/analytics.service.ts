@@ -56,7 +56,19 @@ export class AnalyticsService {
   }
 
   async getPayrollByCountry(): Promise<PayrollByCountryResult[]> {
-    throw new Error("Not implemented");
+    const snapshots = await getCurrentSalarySnapshots();
+    const totals = new Map<string, number>();
+
+    for (const snapshot of snapshots) {
+      totals.set(
+        snapshot.countryId,
+        (totals.get(snapshot.countryId) ?? 0) + snapshot.amount,
+      );
+    }
+
+    return [...totals.entries()]
+      .map(([countryId, total]) => ({ countryId, total }))
+      .sort((left, right) => right.total - left.total);
   }
 
   async getPayrollByDepartment(): Promise<PayrollByDepartmentResult[]> {
