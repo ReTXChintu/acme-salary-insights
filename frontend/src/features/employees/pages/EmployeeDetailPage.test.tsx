@@ -10,7 +10,11 @@ import { renderWithProviders } from "../../../test/test-utils";
 import { EmployeeDetailPage } from "./EmployeeDetailPage";
 
 vi.mock("../../../lib/api/employees", () => ({
+  createEmployee: vi.fn(),
+  listEmployees: vi.fn(),
   getEmployee: vi.fn(),
+  updateEmployee: vi.fn(),
+  deleteEmployee: vi.fn(),
 }));
 
 vi.mock("../../../lib/api/salaries", () => ({

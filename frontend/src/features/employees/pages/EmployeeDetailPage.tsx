@@ -15,6 +15,7 @@ import {
 } from "../../../lib/constants/reference-data";
 import { useEmployeeQuery } from "../hooks/useEmployeesQuery";
 import { useSalariesQuery } from "../../salaries/hooks/useSalariesQuery";
+import { SalaryHistory } from "../../salaries/components/SalaryHistory";
 
 function formatSalaryAmount(amount: number, currency: string): string {
   return `${amount.toLocaleString("en-US")} ${currency}`;
@@ -89,6 +90,8 @@ export function EmployeeDetailPage() {
           </Text>
         </Box>
       </SimpleGrid>
+
+      <SalaryHistory salaries={salariesQuery.data?.data ?? []} />
     </Stack>
   );
 }

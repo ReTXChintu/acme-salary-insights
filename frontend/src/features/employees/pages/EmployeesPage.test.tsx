@@ -143,6 +143,8 @@ describe("EmployeesPage", () => {
       );
     });
 
-    expect(await screen.findByText("ACME-P2-01")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("ACME-P2-01")).toBeInTheDocument();
+    });
   });
 });

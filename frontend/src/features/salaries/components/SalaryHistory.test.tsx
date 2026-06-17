@@ -17,8 +17,8 @@ describe("SalaryHistory", () => {
   it("renders effective dates", () => {
     renderWithProviders(<SalaryHistory salaries={mockSalaryHistory} />);
 
-    expect(screen.getByText("1/1/2026")).toBeInTheDocument();
-    expect(screen.getByText("6/1/2025")).toBeInTheDocument();
+    expect(screen.getByText(/1\/1\/2026/)).toBeInTheDocument();
+    expect(screen.getByText(/6\/1\/2025/)).toBeInTheDocument();
   });
 
   it("renders empty state", () => {
