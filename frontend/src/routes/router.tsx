@@ -1,9 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import {
-  AnalyticsPage,
-  AppShell,
-} from "../components/layout/AppShell";
+import { AppShell } from "../components/layout/AppShell";
+import { AnalyticsPage } from "../features/analytics/pages/AnalyticsPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/pages/EmployeesPage";
 import { EmployeeDetailPage } from "../features/employees/pages/EmployeeDetailPage";

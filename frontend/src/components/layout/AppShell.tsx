@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { Navbar } from "./Navbar";
@@ -15,19 +15,6 @@ export function AppShell() {
         </Box>
       </Flex>
     </Flex>
-  );
-}
-
-export function AnalyticsPage() {
-  return (
-    <Box>
-      <Heading as="h1" size="2xl">
-        Analytics
-      </Heading>
-      <Text mt="4" color="gray.600">
-        Salary analytics will appear here.
-      </Text>
-    </Box>
   );
 }
 
