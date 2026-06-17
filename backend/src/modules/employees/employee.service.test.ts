@@ -320,3 +320,47 @@ describe("EmployeeService.update()", () => {
     ).rejects.toThrow(EmployeeNotFoundError);
   });
 });
+
+describe("EmployeeService.delete()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("deletes employee", async () => {
+    const { prisma } = await import("../../shared/prisma.js");
+    const createdEmployee = await createTestEmployee();
+
+    const deletedEmployee = await employeeService.delete(createdEmployee.id);
+
+    expect(deletedEmployee.isActive).toBe(false);
+    expect(deletedEmployee.deletedAt).toBeInstanceOf(Date);
+
+    const persistedEmployee = await prisma.employee.findUnique({
+      where: { id: createdEmployee.id },
+    });
+
+    expect(persistedEmployee?.isActive).toBe(false);
+    expect(persistedEmployee?.deletedAt).not.toBeNull();
+  });
+
+  it("removes employee from listings", async () => {
+    const createdEmployee = await createTestEmployee();
+
+    await employeeService.delete(createdEmployee.id);
+
+    const result = await employeeService.list();
+
+    expect(result.data.some((employee) => employee.id === createdEmployee.id)).toBe(
+      false,
+    );
+  });
+
+  it("throws when employee not found", async () => {
+    const { EmployeeNotFoundError } = await import("./employee.errors.js");
+
+    await expect(
+      employeeService.delete("missing-employee-id"),
+    ).rejects.toThrow(EmployeeNotFoundError);
+  });
+});
