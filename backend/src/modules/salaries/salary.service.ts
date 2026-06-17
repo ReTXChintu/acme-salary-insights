@@ -16,6 +16,7 @@ export type CreateSalaryData = {
 
 const SUPPORTED_CURRENCIES = new Set(["INR", "USD", "GBP", "EUR", "SGD"]);
 
+export class SalaryService {
   async createSalary(input: CreateSalaryData): Promise<Salary> {
     if (input.amount < 0) {
       throw new InvalidSalaryAmountError(input.amount);
@@ -45,5 +46,9 @@ const SUPPORTED_CURRENCIES = new Set(["INR", "USD", "GBP", "EUR", "SGD"]);
         effectiveDate: input.effectiveDate,
       },
     });
+  }
+
+  async getCurrentSalary(_employeeId: string): Promise<Salary | null> {
+    throw new Error("Not implemented");
   }
 }

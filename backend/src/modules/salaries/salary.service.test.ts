@@ -98,3 +98,66 @@ describe("SalaryService.createSalary()", () => {
     ).rejects.toThrow(InvalidCurrencyError);
   });
 });
+
+describe("SalaryService.getCurrentSalary()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("returns latest salary", async () => {
+    const employee = await createTestEmployee();
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 85_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+    });
+
+    const currentSalary = await salaryService.getCurrentSalary(employee.id);
+
+    expect(currentSalary).not.toBeNull();
+    expect(Number(currentSalary?.amount)).toBe(85_000);
+  });
+
+  it("returns salary with newest effective date", async () => {
+    const employee = await createTestEmployee();
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 60_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-03-01T00:00:00.000Z"),
+    });
+
+    const newestSalary = await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 95_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-12-01T00:00:00.000Z"),
+    });
+
+    const currentSalary = await salaryService.getCurrentSalary(employee.id);
+
+    expect(currentSalary?.id).toBe(newestSalary.id);
+    expect(currentSalary?.effectiveDate).toEqual(
+      new Date("2026-12-01T00:00:00.000Z"),
+    );
+  });
+
+  it("returns null when no salary exists", async () => {
+    const employee = await createTestEmployee();
+
+    const currentSalary = await salaryService.getCurrentSalary(employee.id);
+
+    expect(currentSalary).toBeNull();
+  });
+});
