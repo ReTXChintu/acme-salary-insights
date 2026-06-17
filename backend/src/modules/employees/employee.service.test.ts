@@ -121,3 +121,64 @@ describe("EmployeeService.getById()", () => {
     ).rejects.toThrow(EmployeeNotFoundError);
   });
 });
+
+describe("EmployeeService.search()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+
+    await createTestEmployee({
+      employeeCode: "ACME-SEARCH-01",
+      firstName: "Alice",
+      lastName: "Johnson",
+      email: "alice.johnson@acme.example",
+    });
+
+    await createTestEmployee({
+      employeeCode: "ACME-SEARCH-02",
+      firstName: "Robert",
+      lastName: "Smith",
+      email: "robert.smith@acme.example",
+    });
+  });
+
+  it("searches by first name", async () => {
+    const results = await employeeService.search("Alice");
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.firstName).toBe("Alice");
+  });
+
+  it("searches by last name", async () => {
+    const results = await employeeService.search("Smith");
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.lastName).toBe("Smith");
+  });
+
+  it("searches by employee code", async () => {
+    const results = await employeeService.search("ACME-SEARCH-02");
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.employeeCode).toBe("ACME-SEARCH-02");
+  });
+
+  it("supports partial search", async () => {
+    const results = await employeeService.search("SEARCH-0");
+
+    expect(results).toHaveLength(2);
+  });
+
+  it("is case insensitive", async () => {
+    const results = await employeeService.search("alice");
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.firstName).toBe("Alice");
+  });
+
+  it("returns empty results when no matches are found", async () => {
+    const results = await employeeService.search("missing-person");
+
+    expect(results).toEqual([]);
+  });
+});
