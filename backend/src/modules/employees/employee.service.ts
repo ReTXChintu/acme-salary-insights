@@ -145,6 +145,18 @@ export class EmployeeService {
       data,
     });
   }
+
+  async delete(id: string): Promise<Employee> {
+    await this.getById(id);
+
+    return this.db.employee.update({
+      where: { id },
+      data: {
+        isActive: false,
+        deletedAt: new Date(),
+      },
+    });
+  }
 }
 
 function trimPartialEmployeeData(input: UpdateEmployeeData): UpdateEmployeeData {
