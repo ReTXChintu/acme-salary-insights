@@ -7,6 +7,8 @@ import type {
   TopPaidEmployeeEntry,
 } from "../../features/analytics/types";
 
+import { parseApiError } from "./parseApiError";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -14,7 +16,7 @@ async function parseJson<T>(response: Response): Promise<T> {
     const errorBody = (await response.json().catch(() => null)) as {
       error?: string;
     } | null;
-    throw new Error(errorBody?.error ?? `Request failed with ${response.status}`);
+    throw new Error(parseApiError(errorBody?.error ?? `Request failed with ${response.status}`));
   }
 
   return response.json() as Promise<T>;
