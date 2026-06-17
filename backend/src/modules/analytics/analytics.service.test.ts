@@ -426,3 +426,65 @@ describe("AnalyticsService.getTopPaidEmployees()", () => {
     expect(topPaid).toHaveLength(1);
   });
 });
+
+describe("AnalyticsService.getSalaryDistribution()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("groups correctly", async () => {
+    const amounts = [25_000, 75_000, 125_000, 175_000, 225_000];
+
+    for (const [index, amount] of amounts.entries()) {
+      const employee = await createEmployee({
+        employeeCode: `ACME-DIST-0${index + 1}`,
+        email: `dist.${index + 1}@acme.example`,
+      });
+      await salaryService.createSalary({
+        employeeId: employee.id,
+        amount,
+        currency: "INR",
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      });
+    }
+
+    const distribution = await analyticsService.getSalaryDistribution();
+    const bandCounts = Object.fromEntries(
+      distribution.map((entry) => [entry.band, entry.count]),
+    );
+
+    expect(bandCounts["0-50k"]).toBe(1);
+    expect(bandCounts["50k-100k"]).toBe(1);
+    expect(bandCounts["100k-150k"]).toBe(1);
+    expect(bandCounts["150k-200k"]).toBe(1);
+    expect(bandCounts["200k+"]).toBe(1);
+  });
+
+  it("counts correctly", async () => {
+    for (const index of [0, 1]) {
+      const employee = await createEmployee({
+        employeeCode: `ACME-DIST-C${index + 1}`,
+        email: `dist.count.${index + 1}@acme.example`,
+      });
+      await salaryService.createSalary({
+        employeeId: employee.id,
+        amount: 45_000,
+        currency: "INR",
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      });
+    }
+
+    const distribution = await analyticsService.getSalaryDistribution();
+    const firstBand = distribution.find((entry) => entry.band === "0-50k");
+
+    expect(firstBand?.count).toBe(2);
+  });
+
+  it("handles empty dataset", async () => {
+    const distribution = await analyticsService.getSalaryDistribution();
+
+    expect(distribution.every((entry) => entry.count === 0)).toBe(true);
+    expect(distribution).toHaveLength(5);
+  });
+});
