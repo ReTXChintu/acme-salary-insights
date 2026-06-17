@@ -55,7 +55,10 @@ export class SalaryService {
     });
   }
 
-  async getSalaryHistory(_employeeId: string): Promise<Salary[]> {
-    throw new Error("Not implemented");
+  async getSalaryHistory(employeeId: string): Promise<Salary[]> {
+    return prisma.salary.findMany({
+      where: { employeeId },
+      orderBy: { effectiveDate: "desc" },
+    });
   }
 }
