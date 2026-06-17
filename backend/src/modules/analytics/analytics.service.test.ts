@@ -348,3 +348,81 @@ describe("AnalyticsService.getPayrollByDepartment()", () => {
     expect(payrollByDepartment[0]?.departmentId).toBe("department-product");
   });
 });
+
+describe("AnalyticsService.getTopPaidEmployees()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("returns top N employees", async () => {
+    const employees = await Promise.all(
+      [40_000, 90_000, 70_000].map((amount, index) =>
+        createEmployee({
+          employeeCode: `ACME-TOP-0${index + 1}`,
+          email: `top.${index + 1}@acme.example`,
+        }).then(async (employee) => {
+          await salaryService.createSalary({
+            employeeId: employee.id,
+            amount,
+            currency: "INR",
+            effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+          });
+          return employee;
+        }),
+      ),
+    );
+
+    const topPaid = await analyticsService.getTopPaidEmployees(2);
+
+    expect(topPaid).toHaveLength(2);
+    expect(topPaid[0]?.employeeId).toBe(employees[1]?.id);
+  });
+
+  it("sorts descending", async () => {
+    const lowPaid = await createEmployee({
+      employeeCode: "ACME-TOP-04",
+      email: "top.low@acme.example",
+    });
+    const highPaid = await createEmployee({
+      employeeCode: "ACME-TOP-05",
+      email: "top.high@acme.example",
+    });
+
+    await salaryService.createSalary({
+      employeeId: lowPaid.id,
+      amount: 30_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: highPaid.id,
+      amount: 150_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const topPaid = await analyticsService.getTopPaidEmployees(2);
+
+    expect(topPaid[0]?.amount).toBeGreaterThan(topPaid[1]?.amount ?? 0);
+  });
+
+  it("respects limit", async () => {
+    for (const [index, amount] of [50_000, 60_000, 70_000].entries()) {
+      const employee = await createEmployee({
+        employeeCode: `ACME-TOP-L${index + 1}`,
+        email: `top.limit.${index + 1}@acme.example`,
+      });
+      await salaryService.createSalary({
+        employeeId: employee.id,
+        amount,
+        currency: "INR",
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      });
+    }
+
+    const topPaid = await analyticsService.getTopPaidEmployees(1);
+
+    expect(topPaid).toHaveLength(1);
+  });
+});
