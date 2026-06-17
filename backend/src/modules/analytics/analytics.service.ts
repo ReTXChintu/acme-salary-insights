@@ -72,7 +72,19 @@ export class AnalyticsService {
   }
 
   async getPayrollByDepartment(): Promise<PayrollByDepartmentResult[]> {
-    throw new Error("Not implemented");
+    const snapshots = await getCurrentSalarySnapshots();
+    const totals = new Map<string, number>();
+
+    for (const snapshot of snapshots) {
+      totals.set(
+        snapshot.departmentId,
+        (totals.get(snapshot.departmentId) ?? 0) + snapshot.amount,
+      );
+    }
+
+    return [...totals.entries()]
+      .map(([departmentId, total]) => ({ departmentId, total }))
+      .sort((left, right) => right.total - left.total);
   }
 
   async getTopPaidEmployees(limit: number): Promise<TopPaidEmployeeResult[]> {
