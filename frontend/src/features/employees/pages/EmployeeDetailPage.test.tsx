@@ -46,6 +46,7 @@ describe("EmployeeDetailPage", () => {
     expect(screen.getByText("jane.doe@acme.example")).toBeInTheDocument();
     expect(screen.getByText("Engineering")).toBeInTheDocument();
     expect(screen.getByText("India")).toBeInTheDocument();
+    expect(screen.getByText("ACME-001")).toBeInTheDocument();
   });
 
   it("renders current salary", async () => {
