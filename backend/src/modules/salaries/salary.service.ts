@@ -48,7 +48,10 @@ export class SalaryService {
     });
   }
 
-  async getCurrentSalary(_employeeId: string): Promise<Salary | null> {
-    throw new Error("Not implemented");
+  async getCurrentSalary(employeeId: string): Promise<Salary | null> {
+    return prisma.salary.findFirst({
+      where: { employeeId },
+      orderBy: { effectiveDate: "desc" },
+    });
   }
 }
