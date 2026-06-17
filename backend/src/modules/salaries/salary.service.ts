@@ -69,9 +69,12 @@ export class SalaryService {
   }
 
   async updateSalary(
-    _employeeId: string,
-    _input: UpdateSalaryData,
+    employeeId: string,
+    input: UpdateSalaryData,
   ): Promise<Salary> {
-    throw new Error("Not implemented");
+    return this.createSalary({
+      employeeId,
+      ...input,
+    });
   }
 }
