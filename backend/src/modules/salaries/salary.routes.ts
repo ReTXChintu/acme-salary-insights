@@ -1,47 +1,17 @@
-import type { NextFunction, Request, Response, Router } from "express";
+import type { Router } from "express";
 import { Router as createRouter } from "express";
-import { ZodError } from "zod";
 
-import { EmployeeNotFoundError } from "../employees/employee.errors.js";
-import { EmployeeService } from "../employees/employee.service.js";
 import { employeeIdParamsSchema } from "../employees/employee.schemas.js";
-
+import { EmployeeService } from "../employees/employee.service.js";
 import {
-  InvalidCurrencyError,
-  InvalidSalaryAmountError,
-} from "./salary.errors.js";
+  validateBody,
+  validateParams,
+  getValidatedBody,
+  getValidatedParams,
+} from "../../shared/middleware/validate.js";
+
 import { createSalarySchema } from "./salary.schemas.js";
 import { SalaryService } from "./salary.service.js";
-
-function handleSalaryError(
-  error: unknown,
-  _request: Request,
-  response: Response,
-  next: NextFunction,
-): void {
-  if (error instanceof EmployeeNotFoundError) {
-    response.status(404).json({ error: error.message });
-    return;
-  }
-
-  if (
-    error instanceof InvalidSalaryAmountError ||
-    error instanceof InvalidCurrencyError
-  ) {
-    response.status(400).json({ error: error.message });
-    return;
-  }
-
-  if (error instanceof ZodError) {
-    response.status(400).json({
-      error: "Validation failed",
-      details: error.issues,
-    });
-    return;
-  }
-
-  next(error);
-}
 
 export function createSalaryRoutes(
   salaryService = new SalaryService(),
@@ -49,34 +19,42 @@ export function createSalaryRoutes(
 ): Router {
   const router = createRouter({ mergeParams: true });
 
-  router.get("/", async (request, response, next) => {
-    try {
-      const { id } = employeeIdParamsSchema.parse(request.params);
+  router.get(
+    "/",
+    validateParams(employeeIdParamsSchema),
+    async (request, response, next) => {
+      try {
+        const { id } = getValidatedParams(request, employeeIdParamsSchema);
 
-      await employeeService.getById(id);
+        await employeeService.getById(id);
 
-      const history = await salaryService.getSalaryHistory(id);
+        const history = await salaryService.getSalaryHistory(id);
 
-      response.status(200).json({ data: history });
-    } catch (error) {
-      handleSalaryError(error, request, response, next);
-    }
-  });
+        response.status(200).json({ data: history });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
-  router.post("/", async (request, response, next) => {
-    try {
-      const { id } = employeeIdParamsSchema.parse(request.params);
-      const input = createSalarySchema.parse(request.body);
-      const salary = await salaryService.createSalary({
-        employeeId: id,
-        ...input,
-      });
+  router.post(
+    "/",
+    validateParams(employeeIdParamsSchema),
+    validateBody(createSalarySchema),
+    async (request, response, next) => {
+      try {
+        const { id } = getValidatedParams(request, employeeIdParamsSchema);
+        const salary = await salaryService.createSalary({
+          employeeId: id,
+          ...getValidatedBody(request, createSalarySchema),
+        });
 
-      response.status(201).json(salary);
-    } catch (error) {
-      handleSalaryError(error, request, response, next);
-    }
-  });
+        response.status(201).json(salary);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   return router;
 }

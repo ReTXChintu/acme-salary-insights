@@ -1,29 +1,12 @@
-import type { NextFunction, Request, Response, Router } from "express";
+import type { Router } from "express";
 import { Router as createRouter } from "express";
-import { ZodError } from "zod";
 
 import { prisma } from "../../shared/prisma.js";
+import { validateQuery, getValidatedQuery } from "../../shared/middleware/validate.js";
 
 import { getReferenceLabelMaps } from "./analytics.reference.js";
 import { topPaidQuerySchema } from "./analytics.schemas.js";
 import { AnalyticsService } from "./analytics.service.js";
-
-function handleAnalyticsError(
-  error: unknown,
-  _request: Request,
-  response: Response,
-  next: NextFunction,
-): void {
-  if (error instanceof ZodError) {
-    response.status(400).json({
-      error: "Validation failed",
-      details: error.issues,
-    });
-    return;
-  }
-
-  next(error);
-}
 
 export function createAnalyticsRoutes(
   analyticsService = new AnalyticsService(),
@@ -77,41 +60,45 @@ export function createAnalyticsRoutes(
     }
   });
 
-  router.get("/top-paid", async (request, response, next) => {
-    try {
-      const { limit } = topPaidQuerySchema.parse(request.query);
-      const topPaid = await analyticsService.getTopPaidEmployees(limit);
-      const employees = await prisma.employee.findMany({
-        where: {
-          id: { in: topPaid.map((entry) => entry.employeeId) },
-        },
-        select: {
-          id: true,
-          employeeCode: true,
-          firstName: true,
-          lastName: true,
-        },
-      });
-      const employeeMap = new Map(
-        employees.map((employee) => [employee.id, employee]),
-      );
+  router.get(
+    "/top-paid",
+    validateQuery(topPaidQuerySchema),
+    async (request, response, next) => {
+      try {
+        const { limit } = getValidatedQuery(request, topPaidQuerySchema);
+        const topPaid = await analyticsService.getTopPaidEmployees(limit);
+        const employees = await prisma.employee.findMany({
+          where: {
+            id: { in: topPaid.map((entry) => entry.employeeId) },
+          },
+          select: {
+            id: true,
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+          },
+        });
+        const employeeMap = new Map(
+          employees.map((employee) => [employee.id, employee]),
+        );
 
-      response.status(200).json({
-        data: topPaid.map((entry) => {
-          const employee = employeeMap.get(entry.employeeId);
+        response.status(200).json({
+          data: topPaid.map((entry) => {
+            const employee = employeeMap.get(entry.employeeId);
 
-          return {
-            ...entry,
-            employeeCode: employee?.employeeCode,
-            firstName: employee?.firstName,
-            lastName: employee?.lastName,
-          };
-        }),
-      });
-    } catch (error) {
-      handleAnalyticsError(error, request, response, next);
-    }
-  });
+            return {
+              ...entry,
+              employeeCode: employee?.employeeCode,
+              firstName: employee?.firstName,
+              lastName: employee?.lastName,
+            };
+          }),
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.get("/salary-distribution", async (_request, response, next) => {
     try {

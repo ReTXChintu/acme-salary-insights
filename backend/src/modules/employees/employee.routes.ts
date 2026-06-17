@@ -1,13 +1,7 @@
-import type { NextFunction, Request, Response, Router } from "express";
+import type { Router } from "express";
 import { Router as createRouter } from "express";
-import { ZodError } from "zod";
 
-import {
-  DuplicateEmailError,
-  EmployeeNotFoundError,
-  InvalidCountryError,
-  InvalidDepartmentError,
-} from "./employee.errors.js";
+import { createSalaryRoutes } from "../salaries/salary.routes.js";
 import {
   createEmployeeSchema,
   employeeIdParamsSchema,
@@ -15,121 +9,117 @@ import {
   updateEmployeeSchema,
 } from "./employee.schemas.js";
 import { EmployeeService } from "./employee.service.js";
-import { createSalaryRoutes } from "../salaries/salary.routes.js";
-
-function handleEmployeeError(
-  error: unknown,
-  _request: Request,
-  response: Response,
-  next: NextFunction,
-): void {
-  if (error instanceof EmployeeNotFoundError) {
-    response.status(404).json({ error: error.message });
-    return;
-  }
-
-  if (error instanceof DuplicateEmailError) {
-    response.status(409).json({ error: error.message });
-    return;
-  }
-
-  if (
-    error instanceof InvalidDepartmentError ||
-    error instanceof InvalidCountryError
-  ) {
-    response.status(400).json({ error: error.message });
-    return;
-  }
-
-  if (error instanceof ZodError) {
-    response.status(400).json({
-      error: "Validation failed",
-      details: error.issues,
-    });
-    return;
-  }
-
-  next(error);
-}
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  getValidatedBody,
+  getValidatedParams,
+  getValidatedQuery,
+} from "../../shared/middleware/validate.js";
 
 export function createEmployeeRoutes(
   employeeService = new EmployeeService(),
 ): Router {
   const router = createRouter();
 
-  router.get("/", async (request, response, next) => {
-    try {
-      const query = listEmployeesQuerySchema.parse(request.query);
+  router.get(
+    "/",
+    validateQuery(listEmployeesQuerySchema),
+    async (request, response, next) => {
+      try {
+        const query = getValidatedQuery(request, listEmployeesQuerySchema);
 
-      if (query.search) {
-        const data = await employeeService.search(query.search);
+        if (query.search) {
+          const data = await employeeService.search(query.search);
 
-        response.status(200).json({
-          data,
-          total: data.length,
+          response.status(200).json({
+            data,
+            total: data.length,
+          });
+          return;
+        }
+
+        const result = await employeeService.list({
+          departmentId: query.departmentId,
+          countryId: query.countryId,
+          page: query.page,
+          pageSize: query.pageSize,
         });
-        return;
+
+        response.status(200).json(result);
+      } catch (error) {
+        next(error);
       }
-
-      const result = await employeeService.list({
-        departmentId: query.departmentId,
-        countryId: query.countryId,
-        page: query.page,
-        pageSize: query.pageSize,
-      });
-
-      response.status(200).json(result);
-    } catch (error) {
-      handleEmployeeError(error, request, response, next);
-    }
-  });
+    },
+  );
 
   router.use("/:id/salaries", createSalaryRoutes());
 
-  router.get("/:id", async (request, response, next) => {
-    try {
-      const { id } = employeeIdParamsSchema.parse(request.params);
-      const employee = await employeeService.getById(id);
+  router.get(
+    "/:id",
+    validateParams(employeeIdParamsSchema),
+    async (request, response, next) => {
+      try {
+        const { id } = getValidatedParams(request, employeeIdParamsSchema);
+        const employee = await employeeService.getById(id);
 
-      response.status(200).json(employee);
-    } catch (error) {
-      handleEmployeeError(error, request, response, next);
-    }
-  });
+        response.status(200).json(employee);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
-  router.post("/", async (request, response, next) => {
-    try {
-      const input = createEmployeeSchema.parse(request.body);
-      const employee = await employeeService.create(input);
+  router.post(
+    "/",
+    validateBody(createEmployeeSchema),
+    async (request, response, next) => {
+      try {
+        const employee = await employeeService.create(
+          getValidatedBody(request, createEmployeeSchema),
+        );
 
-      response.status(201).json(employee);
-    } catch (error) {
-      handleEmployeeError(error, request, response, next);
-    }
-  });
+        response.status(201).json(employee);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
-  router.patch("/:id", async (request, response, next) => {
-    try {
-      const { id } = employeeIdParamsSchema.parse(request.params);
-      const input = updateEmployeeSchema.parse(request.body);
-      const employee = await employeeService.update(id, input);
+  router.patch(
+    "/:id",
+    validateParams(employeeIdParamsSchema),
+    validateBody(updateEmployeeSchema),
+    async (request, response, next) => {
+      try {
+        const { id } = getValidatedParams(request, employeeIdParamsSchema);
+        const employee = await employeeService.update(
+          id,
+          getValidatedBody(request, updateEmployeeSchema),
+        );
 
-      response.status(200).json(employee);
-    } catch (error) {
-      handleEmployeeError(error, request, response, next);
-    }
-  });
+        response.status(200).json(employee);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
-  router.delete("/:id", async (request, response, next) => {
-    try {
-      const { id } = employeeIdParamsSchema.parse(request.params);
-      const employee = await employeeService.delete(id);
+  router.delete(
+    "/:id",
+    validateParams(employeeIdParamsSchema),
+    async (request, response, next) => {
+      try {
+        const { id } = getValidatedParams(request, employeeIdParamsSchema);
+        const employee = await employeeService.delete(id);
 
-      response.status(200).json(employee);
-    } catch (error) {
-      handleEmployeeError(error, request, response, next);
-    }
-  });
+        response.status(200).json(employee);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   return router;
 }
