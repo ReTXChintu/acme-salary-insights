@@ -164,4 +164,79 @@ describe("Analytics API", () => {
       });
     });
   });
+
+  describe("GET /analytics/top-paid", () => {
+    it("returns top N employees with amounts", async () => {
+      await createEmployeeWithSalary({
+        amount: 40_000,
+        employeeCode: "ACME-TOP-01",
+        email: "top.one@acme.example",
+      });
+      await createEmployeeWithSalary({
+        amount: 90_000,
+        employeeCode: "ACME-TOP-02",
+        email: "top.two@acme.example",
+      });
+      await createEmployeeWithSalary({
+        amount: 70_000,
+        employeeCode: "ACME-TOP-03",
+        email: "top.three@acme.example",
+      });
+
+      const response = await request(app).get("/analytics/top-paid?limit=2");
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0].amount).toBe(90_000);
+    });
+
+    it("respects limit query param", async () => {
+      await createEmployeeWithSalary({
+        amount: 50_000,
+        employeeCode: "ACME-TOP-L1",
+        email: "top.limit.one@acme.example",
+      });
+
+      const response = await request(app).get("/analytics/top-paid?limit=1");
+
+      expect(response.body.data).toHaveLength(1);
+    });
+
+    it("rejects invalid limit with 400", async () => {
+      const response = await request(app).get("/analytics/top-paid?limit=0");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe("Validation failed");
+    });
+  });
+
+  describe("GET /analytics/salary-distribution", () => {
+    it("returns all five salary bands with counts", async () => {
+      await createEmployeeWithSalary({
+        amount: 25_000,
+        employeeCode: "ACME-DIST-01",
+        email: "dist.one@acme.example",
+      });
+      await createEmployeeWithSalary({
+        amount: 75_000,
+        employeeCode: "ACME-DIST-02",
+        email: "dist.two@acme.example",
+      });
+
+      const response = await request(app).get("/analytics/salary-distribution");
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(5);
+      expect(response.body.data.find((entry: { band: string }) => entry.band === "0-50k")?.count).toBe(1);
+      expect(response.body.data.find((entry: { band: string }) => entry.band === "50k-100k")?.count).toBe(1);
+    });
+
+    it("returns zero counts for every band when empty", async () => {
+      const response = await request(app).get("/analytics/salary-distribution");
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.every((entry: { count: number }) => entry.count === 0)).toBe(true);
+      expect(response.body.data).toHaveLength(5);
+    });
+  });
 });
