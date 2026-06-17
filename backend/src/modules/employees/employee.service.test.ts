@@ -86,3 +86,38 @@ describe("EmployeeService.create()", () => {
     });
   });
 });
+
+async function createTestEmployee(
+  overrides: Partial<typeof validEmployeeInput> = {},
+) {
+  return employeeService.create({
+    ...validEmployeeInput,
+    ...overrides,
+  });
+}
+
+describe("EmployeeService.getById()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("returns employee by id", async () => {
+    const createdEmployee = await createTestEmployee();
+
+    const employee = await employeeService.getById(createdEmployee.id);
+
+    expect(employee).toMatchObject({
+      id: createdEmployee.id,
+      email: createdEmployee.email,
+    });
+  });
+
+  it("throws not found when missing", async () => {
+    const { EmployeeNotFoundError } = await import("./employee.errors.js");
+
+    await expect(
+      employeeService.getById("missing-employee-id"),
+    ).rejects.toThrow(EmployeeNotFoundError);
+  });
+});
