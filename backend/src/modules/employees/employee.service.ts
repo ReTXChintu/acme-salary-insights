@@ -17,6 +17,19 @@ export type CreateEmployeeData = {
   countryId: string;
 };
 
+function matchesSearchQuery(employee: Employee, query: string): boolean {
+  const normalizedQuery = query.toLowerCase();
+  const searchableValues = [
+    employee.firstName,
+    employee.lastName,
+    employee.employeeCode,
+  ];
+
+  return searchableValues.some((value) =>
+    value.toLowerCase().includes(normalizedQuery),
+  );
+}
+
 function trimEmployeeData(data: CreateEmployeeData): CreateEmployeeData {
   return {
     ...data,
@@ -63,7 +76,6 @@ export class EmployeeService {
       return [];
     }
 
-    const normalizedQuery = trimmedQuery.toLowerCase();
     const activeEmployees = await this.db.employee.findMany({
       where: {
         isActive: true,
@@ -72,16 +84,8 @@ export class EmployeeService {
       orderBy: { createdAt: "asc" },
     });
 
-    return activeEmployees.filter((employee) => {
-      const searchableValues = [
-        employee.firstName,
-        employee.lastName,
-        employee.employeeCode,
-      ];
-
-      return searchableValues.some((value) =>
-        value.toLowerCase().includes(normalizedQuery),
-      );
-    });
+    return activeEmployees.filter((employee) =>
+      matchesSearchQuery(employee, trimmedQuery),
+    );
   }
 }
