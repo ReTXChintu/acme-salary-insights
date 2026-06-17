@@ -90,3 +90,60 @@ describe("AnalyticsService.getTotalPayroll()", () => {
     expect(totalPayroll).toBe(0);
   });
 });
+
+describe("AnalyticsService.getAverageSalary()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("calculates average salary", async () => {
+    const firstEmployee = await createEmployee({
+      employeeCode: "ACME-AVG-01",
+      email: "avg.one@acme.example",
+    });
+    const secondEmployee = await createEmployee({
+      employeeCode: "ACME-AVG-02",
+      email: "avg.two@acme.example",
+    });
+
+    await salaryService.createSalary({
+      employeeId: firstEmployee.id,
+      amount: 40_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: secondEmployee.id,
+      amount: 80_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    expect(await analyticsService.getAverageSalary()).toBe(60_000);
+  });
+
+  it("ignores employees without salaries", async () => {
+    await createEmployee({
+      employeeCode: "ACME-AVG-03",
+      email: "avg.three@acme.example",
+    });
+    const paidEmployee = await createEmployee({
+      employeeCode: "ACME-AVG-04",
+      email: "avg.four@acme.example",
+    });
+
+    await salaryService.createSalary({
+      employeeId: paidEmployee.id,
+      amount: 90_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    expect(await analyticsService.getAverageSalary()).toBe(90_000);
+  });
+
+  it("returns zero when empty", async () => {
+    expect(await analyticsService.getAverageSalary()).toBe(0);
+  });
+});

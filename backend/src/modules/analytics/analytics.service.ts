@@ -32,4 +32,8 @@ export class AnalyticsService {
 
     return snapshots.reduce((total, snapshot) => total + snapshot.amount, 0);
   }
+
+  async getAverageSalary(): Promise<number> {
+    throw new Error("Not implemented");
+  }
 }
