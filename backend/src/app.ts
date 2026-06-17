@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import { employeeRoutes } from "./modules/employees/employee.routes.js";
+import { analyticsRoutes } from "./modules/analytics/analytics.routes.js";
 
 export const app = express();
 
@@ -17,3 +18,4 @@ app.get("/health", (_request, response) => {
 });
 
 app.use("/employees", employeeRoutes);
+app.use("/analytics", analyticsRoutes);

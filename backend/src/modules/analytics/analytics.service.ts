@@ -12,6 +12,7 @@ import type {
   PayrollByDepartmentResult,
   SalaryDistributionResult,
   TopPaidEmployeeResult,
+  AnalyticsSummaryResult,
 } from "./analytics.types.js";
 
 export class AnalyticsService {
@@ -40,6 +41,40 @@ export class AnalyticsService {
     );
 
     return total / snapshots.length;
+  }
+
+  async getSummary(): Promise<AnalyticsSummaryResult> {
+    const snapshots = await this.repository.getCurrentSalarySnapshots();
+    const totalPayroll = snapshots.reduce(
+      (total, snapshot) => total + snapshot.amount,
+      0,
+    );
+    const activeEmployeeFilter = {
+      isActive: true,
+      deletedAt: null,
+    } as const;
+
+    const [totalEmployees, countryGroups, departmentGroups] = await Promise.all([
+      prisma.employee.count({ where: activeEmployeeFilter }),
+      prisma.employee.groupBy({
+        by: ["countryId"],
+        where: activeEmployeeFilter,
+      }),
+      prisma.employee.groupBy({
+        by: ["departmentId"],
+        where: activeEmployeeFilter,
+      }),
+    ]);
+
+    return {
+      totalPayroll,
+      averageSalary:
+        snapshots.length === 0 ? 0 : totalPayroll / snapshots.length,
+      employeesWithSalary: snapshots.length,
+      totalEmployees,
+      countryCount: countryGroups.length,
+      departmentCount: departmentGroups.length,
+    };
   }
 
   async getPayrollByCountry(): Promise<PayrollByCountryResult[]> {
