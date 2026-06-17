@@ -28,4 +28,12 @@ describe("SalaryHistory", () => {
       "No salary history available.",
     );
   });
+
+  it("renders salary history as a list", () => {
+    renderWithProviders(<SalaryHistory salaries={mockSalaryHistory} />);
+
+    expect(
+      screen.getByRole("list", { name: "Salary history" }),
+    ).toBeInTheDocument();
+  });
 });
