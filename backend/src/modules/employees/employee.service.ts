@@ -17,6 +17,8 @@ export type CreateEmployeeData = {
   countryId: string;
 };
 
+export type UpdateEmployeeData = Partial<CreateEmployeeData>;
+
 function matchesSearchQuery(employee: Employee, query: string): boolean {
   const normalizedQuery = query.toLowerCase();
   const searchableValues = [
@@ -120,4 +122,49 @@ export class EmployeeService {
 
     return { data, total };
   }
+
+  async update(id: string, input: UpdateEmployeeData): Promise<Employee> {
+    await this.getById(id);
+
+    const data = trimPartialEmployeeData(input);
+
+    if (data.departmentId) {
+      await validateDepartment(this.db, data.departmentId);
+    }
+
+    if (data.countryId) {
+      await validateCountry(this.db, data.countryId);
+    }
+
+    if (data.email) {
+      await validateUniqueEmail(this.db, data.email, id);
+    }
+
+    return this.db.employee.update({
+      where: { id },
+      data,
+    });
+  }
+}
+
+function trimPartialEmployeeData(input: UpdateEmployeeData): UpdateEmployeeData {
+  const data: UpdateEmployeeData = { ...input };
+
+  if (data.employeeCode !== undefined) {
+    data.employeeCode = data.employeeCode.trim();
+  }
+
+  if (data.firstName !== undefined) {
+    data.firstName = data.firstName.trim();
+  }
+
+  if (data.lastName !== undefined) {
+    data.lastName = data.lastName.trim();
+  }
+
+  if (data.email !== undefined) {
+    data.email = data.email.trim();
+  }
+
+  return data;
 }
