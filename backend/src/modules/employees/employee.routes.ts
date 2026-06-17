@@ -15,6 +15,7 @@ import {
   updateEmployeeSchema,
 } from "./employee.schemas.js";
 import { EmployeeService } from "./employee.service.js";
+import { createSalaryRoutes } from "../salaries/salary.routes.js";
 
 function handleEmployeeError(
   error: unknown,
@@ -82,6 +83,8 @@ export function createEmployeeRoutes(
       handleEmployeeError(error, request, response, next);
     }
   });
+
+  router.use("/:id/salaries", createSalaryRoutes());
 
   router.get("/:id", async (request, response, next) => {
     try {
