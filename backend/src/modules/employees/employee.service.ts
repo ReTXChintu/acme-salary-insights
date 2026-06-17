@@ -55,4 +55,33 @@ export class EmployeeService {
 
     return employee;
   }
+
+  async search(query: string): Promise<Employee[]> {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    const normalizedQuery = trimmedQuery.toLowerCase();
+    const activeEmployees = await this.db.employee.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return activeEmployees.filter((employee) => {
+      const searchableValues = [
+        employee.firstName,
+        employee.lastName,
+        employee.employeeCode,
+      ];
+
+      return searchableValues.some((value) =>
+        value.toLowerCase().includes(normalizedQuery),
+      );
+    });
+  }
 }
