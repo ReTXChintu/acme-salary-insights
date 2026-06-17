@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { EmployeeNotFoundError } from "../employees/employee.errors.js";
 import { EmployeeService } from "../employees/employee.service.js";
 
 import {
@@ -240,5 +241,92 @@ describe("SalaryService.getSalaryHistory()", () => {
     const history = await salaryService.getSalaryHistory(employee.id);
 
     expect(history).toEqual([]);
+  });
+});
+
+describe("SalaryService.updateSalary()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("creates new salary record", async () => {
+    const employee = await createTestEmployee();
+
+    const updatedSalary = await salaryService.updateSalary(employee.id, {
+      amount: 100_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+    });
+
+    expect(updatedSalary.id).toBeTruthy();
+    expect(Number(updatedSalary.amount)).toBe(100_000);
+  });
+
+  it("preserves salary history", async () => {
+    const employee = await createTestEmployee();
+
+    const originalSalary = await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    await salaryService.updateSalary(employee.id, {
+      amount: 85_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+    });
+
+    const history = await salaryService.getSalaryHistory(employee.id);
+
+    expect(history).toHaveLength(2);
+    expect(history.some((salary) => salary.id === originalSalary.id)).toBe(
+      true,
+    );
+  });
+
+  it("updates current salary", async () => {
+    const employee = await createTestEmployee();
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    await salaryService.updateSalary(employee.id, {
+      amount: 95_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-12-01T00:00:00.000Z"),
+    });
+
+    const currentSalary = await salaryService.getCurrentSalary(employee.id);
+
+    expect(Number(currentSalary?.amount)).toBe(95_000);
+  });
+
+  it("rejects negative values", async () => {
+    const employee = await createTestEmployee();
+
+    await expect(
+      salaryService.updateSalary(employee.id, {
+        amount: -500,
+        currency: "INR",
+        effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+      }),
+    ).rejects.toThrow(InvalidSalaryAmountError);
+  });
+
+  it("throws when employee not found", async () => {
+    await expect(
+      salaryService.updateSalary("missing-employee-id", {
+        amount: 75_000,
+        currency: "INR",
+        effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+      }),
+    ).rejects.toThrow(EmployeeNotFoundError);
   });
 });

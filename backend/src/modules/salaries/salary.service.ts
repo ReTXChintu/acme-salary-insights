@@ -14,6 +14,12 @@ export type CreateSalaryData = {
   effectiveDate: Date;
 };
 
+export type UpdateSalaryData = {
+  amount: number;
+  currency: string;
+  effectiveDate: Date;
+};
+
 const SUPPORTED_CURRENCIES = new Set(["INR", "USD", "GBP", "EUR", "SGD"]);
 
 export class SalaryService {
@@ -60,5 +66,12 @@ export class SalaryService {
       where: { employeeId },
       orderBy: { effectiveDate: "desc" },
     });
+  }
+
+  async updateSalary(
+    _employeeId: string,
+    _input: UpdateSalaryData,
+  ): Promise<Salary> {
+    throw new Error("Not implemented");
   }
 }
