@@ -250,3 +250,101 @@ describe("AnalyticsService.getPayrollByCountry()", () => {
     expect(payrollByCountry[1]?.countryId).toBe("country-india");
   });
 });
+
+describe("AnalyticsService.getPayrollByDepartment()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("groups payroll by department", async () => {
+    const engineeringEmployee = await createEmployee({
+      employeeCode: "ACME-DEP-01",
+      email: "dept.engineering@acme.example",
+      departmentId: "department-engineering",
+    });
+    const productEmployee = await createEmployee({
+      employeeCode: "ACME-DEP-02",
+      email: "dept.product@acme.example",
+      departmentId: "department-product",
+    });
+
+    await salaryService.createSalary({
+      employeeId: engineeringEmployee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: productEmployee.id,
+      amount: 90_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const payrollByDepartment =
+      await analyticsService.getPayrollByDepartment();
+
+    expect(payrollByDepartment).toHaveLength(2);
+  });
+
+  it("calculates totals", async () => {
+    const firstEngineer = await createEmployee({
+      employeeCode: "ACME-DEP-03",
+      email: "dept.engineering.one@acme.example",
+    });
+    const secondEngineer = await createEmployee({
+      employeeCode: "ACME-DEP-04",
+      email: "dept.engineering.two@acme.example",
+    });
+
+    await salaryService.createSalary({
+      employeeId: firstEngineer.id,
+      amount: 30_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: secondEngineer.id,
+      amount: 50_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const engineeringPayroll = (
+      await analyticsService.getPayrollByDepartment()
+    ).find((entry) => entry.departmentId === "department-engineering");
+
+    expect(engineeringPayroll?.total).toBe(80_000);
+  });
+
+  it("sorts descending", async () => {
+    const engineeringEmployee = await createEmployee({
+      employeeCode: "ACME-DEP-05",
+      email: "dept.engineering.sort@acme.example",
+    });
+    const productEmployee = await createEmployee({
+      employeeCode: "ACME-DEP-06",
+      email: "dept.product.sort@acme.example",
+      departmentId: "department-product",
+    });
+
+    await salaryService.createSalary({
+      employeeId: engineeringEmployee.id,
+      amount: 40_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: productEmployee.id,
+      amount: 110_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const payrollByDepartment =
+      await analyticsService.getPayrollByDepartment();
+
+    expect(payrollByDepartment[0]?.departmentId).toBe("department-product");
+  });
+});
