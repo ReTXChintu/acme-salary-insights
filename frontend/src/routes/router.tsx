@@ -6,6 +6,7 @@ import {
   DashboardPage,
 } from "../components/layout/AppShell";
 import { EmployeesPage } from "../features/employees/pages/EmployeesPage";
+import { EmployeeDetailPage } from "../features/employees/pages/EmployeeDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ export const router = createBrowserRouter([
       {
         path: "employees",
         element: <EmployeesPage />,
+      },
+      {
+        path: "employees/:id",
+        element: <EmployeeDetailPage />,
       },
       {
         path: "analytics",
