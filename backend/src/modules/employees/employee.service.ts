@@ -2,10 +2,10 @@ import type { Employee, PrismaClient } from "../../generated/prisma/client.js";
 import { prisma } from "../../shared/prisma.js";
 
 import {
-  DuplicateEmailError,
-  InvalidCountryError,
-  InvalidDepartmentError,
-} from "./employee.errors.js";
+  validateCountry,
+  validateDepartment,
+  validateUniqueEmail,
+} from "./employee.validation.js";
 
 export type CreateEmployeeData = {
   employeeCode: string;
@@ -32,29 +32,9 @@ export class EmployeeService {
   async create(input: CreateEmployeeData): Promise<Employee> {
     const data = trimEmployeeData(input);
 
-    const department = await this.db.department.findUnique({
-      where: { id: data.departmentId },
-    });
-
-    if (!department) {
-      throw new InvalidDepartmentError(data.departmentId);
-    }
-
-    const country = await this.db.country.findUnique({
-      where: { id: data.countryId },
-    });
-
-    if (!country) {
-      throw new InvalidCountryError(data.countryId);
-    }
-
-    const existingEmployee = await this.db.employee.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingEmployee) {
-      throw new DuplicateEmailError(data.email);
-    }
+    await validateDepartment(this.db, data.departmentId);
+    await validateCountry(this.db, data.countryId);
+    await validateUniqueEmail(this.db, data.email);
 
     return this.db.employee.create({ data });
   }
