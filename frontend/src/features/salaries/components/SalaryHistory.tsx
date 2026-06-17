@@ -27,7 +27,7 @@ export function SalaryHistory({ salaries }: SalaryHistoryProps) {
   }
 
   return (
-    <Stack gap={4} aria-label="Salary history">
+    <Stack gap={4} aria-label="Salary history" role="list">
       <Heading size="md">Salary History</Heading>
 
       {salaries.map((salary) => (
@@ -36,6 +36,7 @@ export function SalaryHistory({ salaries }: SalaryHistoryProps) {
           borderWidth="1px"
           borderRadius="md"
           padding={4}
+          role="listitem"
         >
           <Text fontWeight="semibold">
             {formatSalaryAmount(Number(salary.amount), salary.currency)}
