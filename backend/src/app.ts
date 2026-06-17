@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import { employeeRoutes } from "./modules/employees/employee.routes.js";
 import { analyticsRoutes } from "./modules/analytics/analytics.routes.js";
+import { errorHandler } from "./shared/middleware/errorHandler.js";
 
 export const app = express();
 
@@ -19,3 +20,5 @@ app.get("/health", (_request, response) => {
 
 app.use("/employees", employeeRoutes);
 app.use("/analytics", analyticsRoutes);
+
+app.use(errorHandler);
