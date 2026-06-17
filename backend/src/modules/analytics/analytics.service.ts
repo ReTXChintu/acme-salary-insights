@@ -34,6 +34,17 @@ export class AnalyticsService {
   }
 
   async getAverageSalary(): Promise<number> {
-    throw new Error("Not implemented");
+    const snapshots = await getCurrentSalarySnapshots();
+
+    if (snapshots.length === 0) {
+      return 0;
+    }
+
+    const total = snapshots.reduce(
+      (sum, snapshot) => sum + snapshot.amount,
+      0,
+    );
+
+    return total / snapshots.length;
   }
 }
