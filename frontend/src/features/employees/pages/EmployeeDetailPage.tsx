@@ -63,6 +63,10 @@ export function EmployeeDetailPage() {
 
       <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
         <Box>
+          <Text fontWeight="semibold">Employee code</Text>
+          <Text>{employee.employeeCode}</Text>
+        </Box>
+        <Box>
           <Text fontWeight="semibold">Name</Text>
           <Text>{`${employee.firstName} ${employee.lastName}`}</Text>
         </Box>
