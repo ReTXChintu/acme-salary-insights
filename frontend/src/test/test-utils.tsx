@@ -4,6 +4,8 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 
+import { ThemeProvider } from "../providers/ThemeProvider";
+
 type RenderWithProvidersOptions = RenderOptions & {
   route?: string;
 };
@@ -29,11 +31,13 @@ export function renderWithProviders(
 
   function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <ChakraProvider value={defaultSystem}>
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
-        </QueryClientProvider>
-      </ChakraProvider>
+      <ThemeProvider>
+        <ChakraProvider value={defaultSystem}>
+          <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+          </QueryClientProvider>
+        </ChakraProvider>
+      </ThemeProvider>
     );
   }
 

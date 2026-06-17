@@ -1,0 +1,8 @@
+html.dark .nav-link {
+  color: var(--chakra-colors-gray-200);
+}
+
+html.dark .nav-link-active {
+  background: var(--chakra-colors-blue-900);
+  color: var(--chakra-colors-blue-200);
+}
