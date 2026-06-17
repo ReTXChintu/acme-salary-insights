@@ -54,4 +54,8 @@ export class SalaryService {
       orderBy: { effectiveDate: "desc" },
     });
   }
+
+  async getSalaryHistory(_employeeId: string): Promise<Salary[]> {
+    throw new Error("Not implemented");
+  }
 }

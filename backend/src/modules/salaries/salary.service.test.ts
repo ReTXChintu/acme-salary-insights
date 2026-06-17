@@ -161,3 +161,84 @@ describe("SalaryService.getCurrentSalary()", () => {
     expect(currentSalary).toBeNull();
   });
 });
+
+describe("SalaryService.getSalaryHistory()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("returns salary history", async () => {
+    const employee = await createTestEmployee();
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 80_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-06-01T00:00:00.000Z"),
+    });
+
+    const history = await salaryService.getSalaryHistory(employee.id);
+
+    expect(history).toHaveLength(2);
+  });
+
+  it("sorts descending by effective date", async () => {
+    const employee = await createTestEmployee();
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 70_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    await salaryService.createSalary({
+      employeeId: employee.id,
+      amount: 90_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-12-01T00:00:00.000Z"),
+    });
+
+    const history = await salaryService.getSalaryHistory(employee.id);
+
+    expect(history[0]?.effectiveDate).toEqual(
+      new Date("2026-12-01T00:00:00.000Z"),
+    );
+    expect(history[1]?.effectiveDate).toEqual(
+      new Date("2026-01-01T00:00:00.000Z"),
+    );
+  });
+
+  it("returns all entries", async () => {
+    const employee = await createTestEmployee();
+
+    for (const [index, amount] of [60_000, 70_000, 80_000].entries()) {
+      await salaryService.createSalary({
+        employeeId: employee.id,
+        amount,
+        currency: "INR",
+        effectiveDate: new Date(`2026-0${index + 1}-01T00:00:00.000Z`),
+      });
+    }
+
+    const history = await salaryService.getSalaryHistory(employee.id);
+
+    expect(history).toHaveLength(3);
+  });
+
+  it("returns empty history", async () => {
+    const employee = await createTestEmployee();
+
+    const history = await salaryService.getSalaryHistory(employee.id);
+
+    expect(history).toEqual([]);
+  });
+});
