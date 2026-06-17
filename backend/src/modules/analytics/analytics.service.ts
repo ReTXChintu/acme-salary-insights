@@ -88,7 +88,12 @@ export class AnalyticsService {
   }
 
   async getTopPaidEmployees(limit: number): Promise<TopPaidEmployeeResult[]> {
-    throw new Error("Not implemented");
+    const snapshots = await getCurrentSalarySnapshots();
+
+    return snapshots
+      .sort((left, right) => right.amount - left.amount)
+      .slice(0, limit)
+      .map(({ employeeId, amount }) => ({ employeeId, amount }));
   }
 
   async getSalaryDistribution(): Promise<SalaryDistributionResult[]> {
