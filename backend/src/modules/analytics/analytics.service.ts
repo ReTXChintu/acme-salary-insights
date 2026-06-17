@@ -1,6 +1,13 @@
 import { prisma } from "../../shared/prisma.js";
 
-import type { CurrentSalarySnapshot } from "./analytics.types.js";
+import type {
+  CurrentSalarySnapshot,
+  PayrollByCountryResult,
+  PayrollByDepartmentResult,
+  SalaryDistributionBand,
+  SalaryDistributionResult,
+  TopPaidEmployeeResult,
+} from "./analytics.types.js";
 
 async function getCurrentSalarySnapshots(): Promise<CurrentSalarySnapshot[]> {
   const employees = await prisma.employee.findMany({
@@ -46,5 +53,21 @@ export class AnalyticsService {
     );
 
     return total / snapshots.length;
+  }
+
+  async getPayrollByCountry(): Promise<PayrollByCountryResult[]> {
+    throw new Error("Not implemented");
+  }
+
+  async getPayrollByDepartment(): Promise<PayrollByDepartmentResult[]> {
+    throw new Error("Not implemented");
+  }
+
+  async getTopPaidEmployees(limit: number): Promise<TopPaidEmployeeResult[]> {
+    throw new Error("Not implemented");
+  }
+
+  async getSalaryDistribution(): Promise<SalaryDistributionResult[]> {
+    throw new Error("Not implemented");
   }
 }

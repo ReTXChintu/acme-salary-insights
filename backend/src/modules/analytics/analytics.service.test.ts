@@ -147,3 +147,106 @@ describe("AnalyticsService.getAverageSalary()", () => {
     expect(await analyticsService.getAverageSalary()).toBe(0);
   });
 });
+
+describe("AnalyticsService.getPayrollByCountry()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+  });
+
+  it("groups payroll by country", async () => {
+    const indiaEmployee = await createEmployee({
+      employeeCode: "ACME-CIN-01",
+      email: "country.india@acme.example",
+      countryId: "country-india",
+    });
+    const usEmployee = await createEmployee({
+      employeeCode: "ACME-CUS-01",
+      email: "country.us@acme.example",
+      countryId: "country-united-states",
+    });
+
+    await salaryService.createSalary({
+      employeeId: indiaEmployee.id,
+      amount: 50_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: usEmployee.id,
+      amount: 100_000,
+      currency: "USD",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const payrollByCountry = await analyticsService.getPayrollByCountry();
+
+    expect(payrollByCountry).toHaveLength(2);
+    expect(payrollByCountry.map((entry) => entry.countryId)).toEqual(
+      expect.arrayContaining(["country-india", "country-united-states"]),
+    );
+  });
+
+  it("calculates totals", async () => {
+    const firstIndiaEmployee = await createEmployee({
+      employeeCode: "ACME-CIN-02",
+      email: "country.india.one@acme.example",
+      countryId: "country-india",
+    });
+    const secondIndiaEmployee = await createEmployee({
+      employeeCode: "ACME-CIN-03",
+      email: "country.india.two@acme.example",
+      countryId: "country-india",
+    });
+
+    await salaryService.createSalary({
+      employeeId: firstIndiaEmployee.id,
+      amount: 40_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: secondIndiaEmployee.id,
+      amount: 60_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const indiaPayroll = (await analyticsService.getPayrollByCountry()).find(
+      (entry) => entry.countryId === "country-india",
+    );
+
+    expect(indiaPayroll?.total).toBe(100_000);
+  });
+
+  it("sorts descending", async () => {
+    const indiaEmployee = await createEmployee({
+      employeeCode: "ACME-CIN-04",
+      email: "country.india.sort@acme.example",
+      countryId: "country-india",
+    });
+    const usEmployee = await createEmployee({
+      employeeCode: "ACME-CUS-02",
+      email: "country.us.sort@acme.example",
+      countryId: "country-united-states",
+    });
+
+    await salaryService.createSalary({
+      employeeId: indiaEmployee.id,
+      amount: 50_000,
+      currency: "INR",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await salaryService.createSalary({
+      employeeId: usEmployee.id,
+      amount: 120_000,
+      currency: "USD",
+      effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const payrollByCountry = await analyticsService.getPayrollByCountry();
+
+    expect(payrollByCountry[0]?.countryId).toBe("country-united-states");
+    expect(payrollByCountry[1]?.countryId).toBe("country-india");
+  });
+});
