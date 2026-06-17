@@ -73,7 +73,7 @@ export function AddSalaryModal({
             <Stack as="form" gap="4" id="add-salary-form" onSubmit={onSubmit}>
               <Field.Root invalid={Boolean(errors.amount)}>
                 <Field.Label>Amount</Field.Label>
-                <Input type="number" {...register("amount")} />
+                <Input type="number" {...register("amount", { valueAsNumber: true })} />
                 <Field.ErrorText>{errors.amount?.message}</Field.ErrorText>
               </Field.Root>
 

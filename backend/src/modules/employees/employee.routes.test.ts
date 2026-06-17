@@ -8,7 +8,16 @@ import {
   TEST_DEPARTMENTS,
 } from "../../test/helpers/db.js";
 
-const validEmployeePayload = {
+type EmployeeApiPayload = {
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  departmentId: string;
+  countryId: string;
+};
+
+const validEmployeePayload: EmployeeApiPayload = {
   employeeCode: "ACME-API-01",
   firstName: "Api",
   lastName: "Employee",
@@ -18,7 +27,7 @@ const validEmployeePayload = {
 };
 
 async function createEmployeeViaApi(
-  overrides: Partial<typeof validEmployeePayload> = {},
+  overrides: Partial<EmployeeApiPayload> = {},
 ) {
   const response = await request(app)
     .post("/employees")
