@@ -6,3 +6,43 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model Country {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  currency  String
+  employees Employee[]
+}
+
+model Department {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  employees Employee[]
+}
+
+model Employee {
+  id           String     @id @default(cuid())
+  employeeCode String     @unique
+  firstName    String
+  lastName     String
+  email        String     @unique
+  departmentId String
+  countryId    String
+  isActive     Boolean    @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  department Department @relation(fields: [departmentId], references: [id])
+  country Country @relation(fields: [countryId], references: [id])
+  salaries Salary[]
+}
+
+model Salary {
+  id            String   @id @default(cuid())
+  employeeId    String
+  amount        Decimal
+  currency      String
+  effectiveDate DateTime
+  createdAt     DateTime @default(now())
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
