@@ -1,6 +1,7 @@
 import type { Employee, PrismaClient } from "../../generated/prisma/client.js";
 import { prisma } from "../../shared/prisma.js";
 
+import { EmployeeNotFoundError } from "./employee.errors.js";
 import {
   validateCountry,
   validateDepartment,
@@ -37,5 +38,21 @@ export class EmployeeService {
     await validateUniqueEmail(this.db, data.email);
 
     return this.db.employee.create({ data });
+  }
+
+  async getById(id: string): Promise<Employee> {
+    const employee = await this.db.employee.findFirst({
+      where: {
+        id,
+        isActive: true,
+        deletedAt: null,
+      },
+    });
+
+    if (!employee) {
+      throw new EmployeeNotFoundError(id);
+    }
+
+    return employee;
   }
 }
