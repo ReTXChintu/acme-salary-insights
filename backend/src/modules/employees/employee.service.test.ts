@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  TEST_COUNTRIES,
+  TEST_DEPARTMENTS,
+} from "../../test/helpers/db.js";
+
+import {
   DuplicateEmailError,
   InvalidCountryError,
   InvalidDepartmentError,
@@ -180,5 +185,102 @@ describe("EmployeeService.search()", () => {
     const results = await employeeService.search("missing-person");
 
     expect(results).toEqual([]);
+  });
+});
+
+describe("EmployeeService.list()", () => {
+  beforeEach(async () => {
+    const { prepareTestDatabase } = await import("../../test/helpers/db.js");
+    await prepareTestDatabase();
+
+    await createTestEmployee({
+      employeeCode: "ACME-LIST-01",
+      firstName: "Engineering",
+      lastName: "One",
+      email: "engineering.one@acme.example",
+      departmentId: TEST_DEPARTMENTS[0].id,
+      countryId: TEST_COUNTRIES[0].id,
+    });
+
+    await createTestEmployee({
+      employeeCode: "ACME-LIST-02",
+      firstName: "Product",
+      lastName: "Two",
+      email: "product.two@acme.example",
+      departmentId: TEST_DEPARTMENTS[1].id,
+      countryId: TEST_COUNTRIES[1].id,
+    });
+
+    await createTestEmployee({
+      employeeCode: "ACME-LIST-03",
+      firstName: "Finance",
+      lastName: "Three",
+      email: "finance.three@acme.example",
+      departmentId: TEST_DEPARTMENTS[3].id,
+      countryId: TEST_COUNTRIES[0].id,
+    });
+  });
+
+  it("filters by department", async () => {
+    const result = await employeeService.list({
+      departmentId: TEST_DEPARTMENTS[0].id,
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0]?.departmentId).toBe(TEST_DEPARTMENTS[0].id);
+  });
+
+  it("filters by country", async () => {
+    const result = await employeeService.list({
+      countryId: TEST_COUNTRIES[0].id,
+    });
+
+    expect(result.total).toBe(2);
+    expect(result.data.every((employee) => employee.countryId === TEST_COUNTRIES[0].id)).toBe(
+      true,
+    );
+  });
+
+  it("supports combined filters", async () => {
+    const result = await employeeService.list({
+      departmentId: TEST_DEPARTMENTS[3].id,
+      countryId: TEST_COUNTRIES[0].id,
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.data[0]?.employeeCode).toBe("ACME-LIST-03");
+  });
+
+  it("supports pagination", async () => {
+    const firstPage = await employeeService.list({ page: 1, pageSize: 2 });
+    const secondPage = await employeeService.list({ page: 2, pageSize: 2 });
+
+    expect(firstPage.data).toHaveLength(2);
+    expect(secondPage.data).toHaveLength(1);
+    expect(firstPage.data[0]?.id).not.toBe(secondPage.data[0]?.id);
+  });
+
+  it("returns total count", async () => {
+    const result = await employeeService.list({ page: 1, pageSize: 1 });
+
+    expect(result.total).toBe(3);
+    expect(result.data).toHaveLength(1);
+  });
+
+  it("excludes soft-deleted employees", async () => {
+    const employees = await employeeService.list();
+    const employeeToDelete = employees.data[0];
+
+    expect(employeeToDelete).toBeDefined();
+
+    await employeeService.delete(employeeToDelete!.id);
+
+    const result = await employeeService.list();
+
+    expect(result.total).toBe(2);
+    expect(result.data.some((employee) => employee.id === employeeToDelete!.id)).toBe(
+      false,
+    );
   });
 });
