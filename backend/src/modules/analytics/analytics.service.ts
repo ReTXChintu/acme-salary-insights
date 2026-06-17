@@ -9,6 +9,26 @@ import type {
   TopPaidEmployeeResult,
 } from "./analytics.types.js";
 
+function getSalaryDistributionBand(amount: number): SalaryDistributionBand {
+  if (amount < 50_000) {
+    return "0-50k";
+  }
+
+  if (amount < 100_000) {
+    return "50k-100k";
+  }
+
+  if (amount < 150_000) {
+    return "100k-150k";
+  }
+
+  if (amount < 200_000) {
+    return "150k-200k";
+  }
+
+  return "200k+";
+}
+
 async function getCurrentSalarySnapshots(): Promise<CurrentSalarySnapshot[]> {
   const employees = await prisma.employee.findMany({
     where: {
@@ -97,6 +117,26 @@ export class AnalyticsService {
   }
 
   async getSalaryDistribution(): Promise<SalaryDistributionResult[]> {
-    throw new Error("Not implemented");
+    const snapshots = await getCurrentSalarySnapshots();
+    const bands: SalaryDistributionBand[] = [
+      "0-50k",
+      "50k-100k",
+      "100k-150k",
+      "150k-200k",
+      "200k+",
+    ];
+    const counts = new Map<SalaryDistributionBand, number>(
+      bands.map((band) => [band, 0]),
+    );
+
+    for (const snapshot of snapshots) {
+      const band = getSalaryDistributionBand(snapshot.amount);
+      counts.set(band, (counts.get(band) ?? 0) + 1);
+    }
+
+    return bands.map((band) => ({
+      band,
+      count: counts.get(band) ?? 0,
+    }));
   }
 }
